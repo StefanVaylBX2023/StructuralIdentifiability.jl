@@ -17,22 +17,18 @@ Output:
 
 
 function coeff_matrix(xeq::Dict{fmpq_mpoly, <:Union{Generic.Frac{fmpq_mpoly}, fmpq_mpoly}})
-    eq2denom = Dict{fmpq_mpoly,fmpq_mpoly}(x => unpack_fraction(f)[2] for (x,f) in xeq)
+    eq2denom = Dict{fmpq_mpoly,fmpq_mpoly}(x => unpack_fraction(f)[2] for (x, f) in xeq)
     denom = lcm(collect(values(eq2denom)))
-    ode_x = Dict{fmpq_mpoly, fmpq_mpoly}()
-    for (x, f) in xeq
-        ode_x[x] = unpack_fraction(f*denom)[1]
-    end
+    ode_x = Dict{fmpq_mpoly, fmpq_mpoly}([x => unpack_fraction(f*denom)[1] for (x, f) in xeq])
     equations = collect(values(ode_x))
     monoms = Set{fmpq_mpoly}(reduce(union, map(monomials, equations)))
     matrix = zero(Nemo.MatrixSpace(Nemo.QQ, length(xeq), length(monoms)))
     map_monom = Dict{fmpq_mpoly,Int64}(monomial => i for (i, monomial) in enumerate(monoms))
     map_eq = Dict{fmpq_mpoly, Int64}(x => i for (i, (x, f)) in enumerate(ode_x))
     for (x, f) in ode_x
-        for (c,m) in zip(coefficients(f), monomials(f))
+        for (c, m) in zip(coefficients(f), monomials(f))
             matrix[map_eq[x], map_monom[m]] = c
         end
-
     end
     return matrix, map_eq
 end
@@ -57,22 +53,20 @@ function find_first_integrals(ode::ODE{P}, out = :polynom) where P <: MPolyElem
     xeq = ode.x_equations
     matrix, map_eq = coeff_matrix(xeq)
     n_col, solution_set = Nemo.nullspace(transpose(matrix))
-    if (n_col == 0)
-        return []
-    end
-    solution_matrix = transpose(solution_set)[1,:]
-    solution_matrices = [transpose(solution_set)[i,:] for i in 1:n_col]
+    (n_col == 0) && return []
+    solution_matrix = transpose(solution_set)[1, : ]
+    solution_matrices = [transpose(solution_set)[i, : ] for i in 1:n_col]
     solution = Dict{fmpq_mpoly,fmpq}(Dict(x => solution_matrix[i] for (x, i) in map_eq if solution_matrix[i] != 0))
     variables = keys(solution)
     ring = parent(first(variables))
-    sol = ring(first(variables)*solution[first(variables)])
-    sol_poly = Array{fmpq_mpoly,1}()
+    sol = ring(first(variables) * solution[first(variables)])
+    sol_poly = Array{fmpq_mpoly, 1}()
     for sol in solution_matrices
-        dict_sol = Dict{fmpq_mpoly,fmpq}(Dict(x => sol[i] for (x, i) in map_eq if sol[i] != 0))
-        poly = ring(first(keys(dict_sol))*dict_sol[first(keys(dict_sol))])
-        for (x,coef) in dict_sol
+        dict_sol = Dict{fmpq_mpoly, fmpq}(Dict(x => sol[i] for (x, i) in map_eq if sol[i] != 0))
+        poly = ring(first(keys(dict_sol)) * dict_sol[first(keys(dict_sol))])
+        for (x, coef) in dict_sol
             if x != first(variables)
-                poly += ring(x*coef)
+                poly += ring(x * coef)
             end
         end
         push!(sol_poly, poly)
@@ -144,7 +138,7 @@ end
 # -----------------------------------------------------------------------------
 
 function map_var2par(xeq::Dict{fmpq_mpoly, Union{fmpq_mpoly, Generic.Frac{fmpq_mpoly}}}, candidates::Vector{fmpq_mpoly}, scoring_functions)
-    ranks = Dict(x => collect(Base.Iterators.flatten([F(xeq,x) for F in scoring_functions])) for x in candidates)
+    ranks = Dict(x => collect(Base.Iterators.flatten([F(xeq, x) for F in scoring_functions])) for x in candidates)
     return ranks
 end
 
@@ -157,19 +151,16 @@ Based on results of solution finds variable which suits best for substitution.
 
 function find_var2sub(mappings)
     to_compare = collect(values(mappings))
-    if [to_compare[i][1] for i in 1:lastindex(to_compare)] == [0 for i in 1:lastindex(to_compare)]
-        return first(keys(mappings))
-    end
+    ([to_compare[i][1] for i in 1:lastindex(to_compare)] == [0 for i in 1:lastindex(to_compare)]) && return first(keys(mappings))
+
     to_compare = [to_compare[i] for i in 1:length(to_compare) if to_compare[i][1] > 0]
-    if to_compare == []
-        return 0
-    end
-    if length(to_compare) == 1
-        return findfirst(x -> x == to_compare[1], mappings)
-    end
+    (to_compare == []) && return 0
+    
+    (length(to_compare) == 1) && return findfirst(x -> x == to_compare[1], mappings)
+
     minimum = min(to_compare...)
-    vars = findfirst(x -> x == minimum, mappings)
-    return vars
+
+    return findfirst(x -> x == minimum, mappings)
 end
 
 # -----------------------------------------------------------------------------
@@ -188,9 +179,13 @@ substitution based on the solution.
 
 Input:
 - `ode` - initial ODE system
+- `ode_aux` - auxiliary ODE system which construct another system 
+based on actions applied to main one but without substitution of c_i parameters
 
 Output: 
-- ODE system with applied substitution
+- `new_ode` - ODE system with applied substitution
+- `integral` - Dictionary with current first integral where key is a paramter and value is a first integral
+- `ode_aux` - auxiliary ODE system without substitution of c_i parameters
 """
 
 
@@ -207,39 +202,44 @@ function construct_substitution(ode::ODE{P}, ode_aux::ODE{P}) where P <: MPolyEl
     
     new_const = gen_new_name(ode, "c")
     ode = add_parameter(ode, new_const)
+
     solution = find_first_integrals(ode, :map)  
-    if solution == []
-        return 0, [], 0
-    end
+    (solution == []) && return 0, [], 0
+
     candidates = collect(keys(solution))
     var2sub = get_var2sub(ode.x_equations, candidates, [get_max_exp, get_occurences])
     ring = ode.poly_ring
+
     new_const = ring(str_to_var(new_const, ring))
     integral = Dict()
-    integral[new_const] = ring(solution[var2sub]*var2sub)
+    integral[new_const] = ring(solution[var2sub] * var2sub)
     for i in range(1, length(candidates))
         if candidates[i] != var2sub
             integral[new_const] = integral[new_const] + ring(candidates[i] * solution[candidates[i]])
         end
     end
+
     sub = new_const
     for i in range(1, length(candidates))
         if candidates[i] != var2sub
             sub = sub - ring(candidates[i] * solution[candidates[i]])
         end
     end
+
     new_x = Dict{fmpq_mpoly, Union{fmpq_mpoly, Generic.Frac{fmpq_mpoly}}}()
     new_y = Dict{fmpq_mpoly, Union{fmpq_mpoly, Generic.Frac{fmpq_mpoly}}}()
     new_u = copy(ode.u_vars)
-    sub = (1//solution[var2sub])*sub
+
+    sub = (1 // solution[var2sub]) * sub
     for (x, f) in ode.x_equations
         if x != var2sub
-            new_x[x] = make_substitution(f,var2sub,sub)
+            new_x[x] = make_substitution(f, var2sub, sub)
         end
     end
     for (y,f) in ode.y_equations
-        new_y[y] = make_substitution(f,var2sub,sub)
+        new_y[y] = make_substitution(f, var2sub, sub)
     end
+    
     new_vars = map(var_to_str, setdiff(gens(ring), [var2sub]))
     S, _ = Nemo.PolynomialRing(Nemo.QQ, new_vars)
     dict_type = Dict{fmpq_mpoly, Union{fmpq_mpoly, Generic.Frac{fmpq_mpoly}}}
@@ -264,6 +264,8 @@ Input:
 
 Output: 
 - final ODE system after all the substitutions have been applied
+- `integrals` - Dictionary with all the first integrals where keys are paramters and values are first integrals
+- `ode_aux` - auxiliary ODE system without substitution of c_i parameters
 """
 function perform_substitution(ode::ODE{P}) where P <: fmpq_mpoly
     ys = collect(keys(ode.y_equations))
@@ -368,21 +370,18 @@ function add_u_eqs(ode::ODE{P}) where P <: MPolyElem
     
     new_y = gen_new_name(ode, "y")
     new_x = gen_new_name(ode, "x")
-    ode,_ = add_x_eqs(ode, Dict(new_x=> one(ode.poly_ring)))
-    ode = add_outputs(ode, Dict(new_y=> str_to_var(new_x, ode.poly_ring)))
+    ode, _ = add_x_eqs(ode, Dict(new_x => one(ode.poly_ring)))
+    ode = add_outputs(ode, Dict(new_y => str_to_var(new_x, ode.poly_ring)))
     
-    if us == []
-        return ode
-    else
-        for u in us
-            new_y = gen_new_name(ode, "y")
-            new_x = gen_new_name(ode, "x")
-            ode,_ = add_x_eqs(ode, Dict(new_x=> u))
-            ode = add_outputs(ode, Dict(new_y=> str_to_var(new_x, ode.poly_ring)))
-            
-        end
-    end
-    
+    (us == []) && return ode
+
+    for u in us
+        new_y = gen_new_name(ode, "y")
+        new_x = gen_new_name(ode, "x")
+        ode,_ = add_x_eqs(ode, Dict(new_x => u))
+        ode = add_outputs(ode, Dict(new_y => str_to_var(new_x, ode.poly_ring)))
+    end    
+
     return ode
 end
 
@@ -418,7 +417,7 @@ function dfs_cleanup(ode::ODE{P}, ys::Vector{fmpq_mpoly}) where P <: MPolyElem
     raw = traverse_outputs(graph, ys)
     valid_vars = (union(collect(values(raw))...))
     vars_str = [var_to_str(x) for x in valid_vars]
-    for (y,f) in ode.y_equations
+    for (y, f) in ode.y_equations
         if y ∉ valid_vars
             temp = map(var_to_str, vars(f))
             if issubset(temp, vars_str)
@@ -429,9 +428,9 @@ function dfs_cleanup(ode::ODE{P}, ys::Vector{fmpq_mpoly}) where P <: MPolyElem
     end
     S, _ = Nemo.PolynomialRing(Nemo.QQ,vars_str)
     dict_type = Dict{fmpq_mpoly, Union{fmpq_mpoly, Generic.Frac{fmpq_mpoly}}}
-    new_xeq = dict_type(parent_ring_change(x,S) => parent_ring_change(f,S) for (x,f) in ode.x_equations if x in valid_vars)
-    new_yeq = dict_type(parent_ring_change(y,S) => parent_ring_change(f,S) for (y,f) in ode.y_equations if y in valid_vars)
-    new_u = Array{fmpq_mpoly,1}([parent_ring_change(u,S) for u in ode.u_vars if u in valid_vars])
+    new_xeq = dict_type(parent_ring_change(x, S) => parent_ring_change(f, S) for (x, f) in ode.x_equations if x in valid_vars)
+    new_yeq = dict_type(parent_ring_change(y, S) => parent_ring_change(f, S) for (y, f) in ode.y_equations if y in valid_vars)
+    new_u = Array{fmpq_mpoly,1}([parent_ring_change(u, S) for u in ode.u_vars if u in valid_vars])
     new_ode = ODE{fmpq_mpoly}(new_xeq, new_yeq, new_u)
     return new_ode
 end

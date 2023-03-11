@@ -96,6 +96,7 @@ function make_substitution(
     return result
 end
 
+
 function make_substitution(f::Union{fmpq_mpoly, Generic.Frac{fmpq_mpoly}}, var2sub::fmpq_mpoly, sub::fmpq_mpoly)
     numer, denom = unpack_fraction(f)
     return make_substitution(numer, var2sub, sub, one(parent(numer)))//make_substitution(denom, var2sub, sub, one(parent(numer)))
