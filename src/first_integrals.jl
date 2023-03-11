@@ -349,7 +349,6 @@ function add_y_integrals(ode::ODE{P}, new_x::Array{fmpq_mpoly,1}) where P <: MPo
     for x in new_x
         x = parent_ring_change(x,ring)
         new_y = gen_new_name(ode,"y")
-        #ode = add_parameter(ode, new_y)
         ode = add_outputs(ode, Dict(new_y=> x))
     end
     return ode
@@ -369,8 +368,6 @@ function add_u_eqs(ode::ODE{P}) where P <: MPolyElem
     
     new_y = gen_new_name(ode, "y")
     new_x = gen_new_name(ode, "x")
-    #ode = add_parameter(ode, new_y)
-    #ode = add_parameter(ode, new_x)
     ode,_ = add_x_eqs(ode, Dict(new_x=> one(ode.poly_ring)))
     ode = add_outputs(ode, Dict(new_y=> str_to_var(new_x, ode.poly_ring)))
     
@@ -380,8 +377,6 @@ function add_u_eqs(ode::ODE{P}) where P <: MPolyElem
         for u in us
             new_y = gen_new_name(ode, "y")
             new_x = gen_new_name(ode, "x")
-            #ode = add_parameter(ode, new_y)
-            #ode = add_parameter(ode, new_x)
             ode,_ = add_x_eqs(ode, Dict(new_x=> u))
             ode = add_outputs(ode, Dict(new_y=> str_to_var(new_x, ode.poly_ring)))
             
