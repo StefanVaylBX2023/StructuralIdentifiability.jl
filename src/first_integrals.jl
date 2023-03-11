@@ -17,13 +17,13 @@ Output:
 
 
 function coeff_matrix(xeq::Dict{fmpq_mpoly, <:Union{Generic.Frac{fmpq_mpoly}, fmpq_mpoly}})
-    eq2denom = Dict{fmpq_mpoly,fmpq_mpoly}(x => unpack_fraction(f)[2] for (x, f) in xeq)
+    eq2denom = Dict{fmpq_mpoly, fmpq_mpoly}(x => unpack_fraction(f)[2] for (x, f) in xeq)
     denom = lcm(collect(values(eq2denom)))
     ode_x = Dict{fmpq_mpoly, fmpq_mpoly}([x => unpack_fraction(f*denom)[1] for (x, f) in xeq])
     equations = collect(values(ode_x))
     monoms = Set{fmpq_mpoly}(reduce(union, map(monomials, equations)))
     matrix = zero(Nemo.MatrixSpace(Nemo.QQ, length(xeq), length(monoms)))
-    map_monom = Dict{fmpq_mpoly,Int64}(monomial => i for (i, monomial) in enumerate(monoms))
+    map_monom = Dict{fmpq_mpoly, Int64}(monomial => i for (i, monomial) in enumerate(monoms))
     map_eq = Dict{fmpq_mpoly, Int64}(x => i for (i, (x, f)) in enumerate(ode_x))
     for (x, f) in ode_x
         for (c, m) in zip(coefficients(f), monomials(f))
@@ -122,7 +122,7 @@ function get_occurences(xeq::Dict{fmpq_mpoly, Union{fmpq_mpoly, Generic.Frac{fmp
             if var in vars(x)
                 total_occur += 1  
             end
-            if (var in vars(x)) && (length(vars(x)) >=2)
+            if (var in vars(x)) && (length(vars(x)) >= 2)
                 monom_occur += 1
             end
         end
@@ -302,7 +302,7 @@ Adds for all y_equations new x_equations to involve them in substitution process
 function add_x_eqs(ode::ODE{P}, extra_x) where P <: MPolyElem
 
     new_var_names = collect(map(var_to_str, gens(ode.poly_ring)))
-    for i in range(1,length(extra_x))
+    for i in range(1, length(extra_x))
         new_var_names = vcat(new_var_names, collect(keys(extra_x))[i])
     end
     new_ring, _ = Nemo.PolynomialRing(base_ring(ode.poly_ring), new_var_names)
@@ -346,12 +346,12 @@ For each new x, adds a new y and adds the equation y = x.
 
 """
 
-function add_y_integrals(ode::ODE{P}, new_x::Array{fmpq_mpoly,1}) where P <: MPolyElem
+function add_y_integrals(ode::ODE{P}, new_x::Array{fmpq_mpoly, 1}) where P <: MPolyElem
     ring = ode.poly_ring
     for x in new_x
-        x = parent_ring_change(x,ring)
-        new_y = gen_new_name(ode,"y")
-        ode = add_outputs(ode, Dict(new_y=> x))
+        x = parent_ring_change(x, ring)
+        new_y = gen_new_name(ode, "y")
+        ode = add_outputs(ode, Dict(new_y => x))
     end
     return ode
 end
@@ -378,7 +378,7 @@ function add_u_eqs(ode::ODE{P}) where P <: MPolyElem
     for u in us
         new_y = gen_new_name(ode, "y")
         new_x = gen_new_name(ode, "x")
-        ode,_ = add_x_eqs(ode, Dict(new_x => u))
+        ode, _ = add_x_eqs(ode, Dict(new_x => u))
         ode = add_outputs(ode, Dict(new_y => str_to_var(new_x, ode.poly_ring)))
     end    
 
@@ -426,11 +426,11 @@ function dfs_cleanup(ode::ODE{P}, ys::Vector{fmpq_mpoly}) where P <: MPolyElem
             end
         end
     end
-    S, _ = Nemo.PolynomialRing(Nemo.QQ,vars_str)
+    S, _ = Nemo.PolynomialRing(Nemo.QQ, vars_str)
     dict_type = Dict{fmpq_mpoly, Union{fmpq_mpoly, Generic.Frac{fmpq_mpoly}}}
     new_xeq = dict_type(parent_ring_change(x, S) => parent_ring_change(f, S) for (x, f) in ode.x_equations if x in valid_vars)
     new_yeq = dict_type(parent_ring_change(y, S) => parent_ring_change(f, S) for (y, f) in ode.y_equations if y in valid_vars)
-    new_u = Array{fmpq_mpoly,1}([parent_ring_change(u, S) for u in ode.u_vars if u in valid_vars])
+    new_u = Array{fmpq_mpoly, 1}([parent_ring_change(u, S) for u in ode.u_vars if u in valid_vars])
     new_ode = ODE{fmpq_mpoly}(new_xeq, new_yeq, new_u)
     return new_ode
 end
