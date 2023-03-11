@@ -7,22 +7,22 @@ function integral_tester(ode::ODE{P}) where P <: MPolyElem
     init_ode = result[3]
     res_ode = result[1]
     integrals = result[2]
-    map_x = Dict(x => fmpq(rand(1:10)) for x in init_ode.x_vars)
-    map_p = Dict(p => fmpq(rand(1:10)) for p in init_ode.parameters)
-    map_u = Dict(u => [fmpq(rand(1:100)) for i in 0:ord] for u in init_ode.u_vars)
+    map_x = Dict(x => fmpq(rand(1 : 10)) for x in init_ode.x_vars)
+    map_p = Dict(p => fmpq(rand(1 : 10)) for p in init_ode.parameters)
+    map_u = Dict(u => [fmpq(rand(1 : 100)) for i in 0:ord] for u in init_ode.u_vars)
     ps_ode = power_series_solution(init_ode, map_p, map_x, map_u, ord)
     #----------------------------------------------------------------------------------------------------------------------------------------
-    map_x_str = Dict(var_to_str(x) => f for (x,f) in map_x)
-    map_u_str = Dict(var_to_str(u) => f for (u,f) in map_u)
-    map_p_str = Dict(var_to_str(p) => f for (p,f) in map_p)
+    map_x_str = Dict(var_to_str(x) => f for (x, f) in map_x)
+    map_u_str = Dict(var_to_str(u) => f for (u, f) in map_u)
+    map_p_str = Dict(var_to_str(p) => f for (p, f) in map_p)
     #----------------------------------------------------------------------------------------------------------------------------------------
     cvars = Dict{fmpq_mpoly, fmpq}()
-    for (x,f) in integrals
+    for (x, f) in integrals
         var = vars(f)
-        temp= Dict{fmpq_mpoly, fmpq_mpoly}()
+        temp = Dict{fmpq_mpoly, fmpq_mpoly}()
         for v in var
             t = var_to_str(v)
-            temp[v] = map_x_str[t]*one(res_ode.poly_ring)
+            temp[v] = map_x_str[t] * one(res_ode.poly_ring)
         end
         cvars[x] = first(coefficients(eval_at_dict(f, temp)))
     end
