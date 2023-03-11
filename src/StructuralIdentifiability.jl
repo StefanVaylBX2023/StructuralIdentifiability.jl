@@ -47,6 +47,9 @@ export PBRepresentation, diffreduce, io_switch!, pseudodivision
 # functions for finding submodels of a given model and visualization of the submodels
 export find_submodels
 
+# functions to apply reduction algorithm on initial ODE system via first integrals
+export perform_substitution, find_first_integrals
+
 # would be great to merge with the Julia logger
 _runtime_logger = Dict()
 
@@ -63,7 +66,7 @@ include("global_identifiability.jl")
 include("lincomp.jl")
 include("pb_representation.jl")
 include("submodels.jl")
-
+include("first_integrals.jl")
 """
     assess_identifiability(ode::ODE{P}, p::Float64=0.99) where P <: MPolyElem{fmpq}
 Input:
@@ -75,6 +78,7 @@ at least `p`.
 
 """
 function assess_identifiability(ode::ODE{P}, p::Float64 = 0.99) where {P <: MPolyElem{fmpq}}
+    #ode = perfrom_substitution(ode)[1]
     result = assess_identifiability(ode, ode.parameters, p)
     return result #Dict(param => res for (param, res) in zip(ode.parameters, result_list))
 end
