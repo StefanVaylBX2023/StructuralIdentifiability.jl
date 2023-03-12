@@ -213,14 +213,15 @@ function construct_substitution(ode::ODE{P}, ode_aux::ODE{P}) where P <: MPolyEl
     new_const = ring(str_to_var(new_const, ring))
     integral = Dict()
     integral[new_const] = ring(solution[var2sub] * var2sub)
-    for i in range(start = 1, stop = length(candidates))
+    lc = length(candidates)
+    for i in range(1, lc)
         if candidates[i] != var2sub
             integral[new_const] = integral[new_const] + ring(candidates[i] * solution[candidates[i]])
         end
     end
 
     sub = new_const
-    for i in range(start = 1, stop = length(candidates))
+    for i in range(1, lc)
         if candidates[i] != var2sub
             sub = sub - ring(candidates[i] * solution[candidates[i]])
         end
