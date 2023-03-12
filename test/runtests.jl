@@ -45,7 +45,8 @@ using StructuralIdentifiability:
     pseudodivision,
     diffreduce,
     io_switch!,
-    add_outputs
+    add_outputs,
+    perform_substitution
 
 function random_ps(ps_ring, range = 1000)
     result = zero(ps_ring)
