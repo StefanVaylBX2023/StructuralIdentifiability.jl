@@ -301,10 +301,8 @@ Adds for all y_equations new x_equations to involve them in substitution process
 
 function add_x_eqs(ode::ODE{P}, extra_x) where P <: MPolyElem
 
-    new_var_names = collect(map(var_to_str, gens(ode.poly_ring)))
-    for i in range(1, length(extra_x))
-        new_var_names = vcat(new_var_names, collect(keys(extra_x))[i])
-    end
+    new_var_names =
+        vcat(collect(map(var_to_str, gens(ode.poly_ring))), collect(keys(extra_x)))
     new_ring, _ = Nemo.PolynomialRing(base_ring(ode.poly_ring), new_var_names)
     new_x_eqs = Dict{P, Union{P, Generic.Frac{P}}}(parent_ring_change(x, new_ring) => parent_ring_change(f, new_ring) for (x, f) in ode.x_equations)
     new_y_eqs = Dict{P, Union{P, Generic.Frac{P}}}(parent_ring_change(y, new_ring) => parent_ring_change(g, new_ring) for (y, g) in ode.y_equations)
