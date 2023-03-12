@@ -19,7 +19,7 @@ Output:
 function coeff_matrix(xeq::Dict{fmpq_mpoly, <:Union{Generic.Frac{fmpq_mpoly}, fmpq_mpoly}})
     eq2denom = Dict{fmpq_mpoly, fmpq_mpoly}(x => unpack_fraction(f)[2] for (x, f) in xeq)
     denom = lcm(collect(values(eq2denom)))
-    ode_x = Dict{fmpq_mpoly, fmpq_mpoly}([x => unpack_fraction(f*denom)[1] for (x, f) in xeq])
+    ode_x = Dict{fmpq_mpoly, fmpq_mpoly}([x => unpack_fraction(f * denom)[1] for (x, f) in xeq])
     equations = collect(values(ode_x))
     monoms = Set{fmpq_mpoly}(reduce(union, map(monomials, equations)))
     matrix = zero(Nemo.MatrixSpace(Nemo.QQ, length(xeq), length(monoms)))
@@ -213,14 +213,14 @@ function construct_substitution(ode::ODE{P}, ode_aux::ODE{P}) where P <: MPolyEl
     new_const = ring(str_to_var(new_const, ring))
     integral = Dict()
     integral[new_const] = ring(solution[var2sub] * var2sub)
-    for i in range(1, length(candidates))
+    for i in range(start = 1, stop = length(candidates))
         if candidates[i] != var2sub
             integral[new_const] = integral[new_const] + ring(candidates[i] * solution[candidates[i]])
         end
     end
 
     sub = new_const
-    for i in range(1, length(candidates))
+    for i in range(start = 1, stop = length(candidates))
         if candidates[i] != var2sub
             sub = sub - ring(candidates[i] * solution[candidates[i]])
         end
