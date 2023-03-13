@@ -504,28 +504,35 @@ function PreprocessODE(
     )
 end
 
-
 #------------------------------------------------------------------------------
 
-function add_parameter(ode::ODE{P}, constant::String) where P <: Nemo.MPolyElem
+function add_parameter(ode::ODE{P}, constant::String) where {P <: Nemo.MPolyElem}
     new_var_names = vcat(collect(map(var_to_str, gens(ode.poly_ring))), constant)
     new_ring, _ = Nemo.PolynomialRing(Nemo.QQ, new_var_names)
-    new_x_eqs = Dict{P, Union{P, Generic.Frac{P}}}(parent_ring_change(x, new_ring) => parent_ring_change(f, new_ring) for (x, f) in ode.x_equations)
-    new_y_eqs = Dict{P, Union{P, Generic.Frac{P}}}(parent_ring_change(y, new_ring) => parent_ring_change(g, new_ring) for (y, g) in ode.y_equations)
+    new_x_eqs = Dict{P, Union{P, Generic.Frac{P}}}(
+        parent_ring_change(x, new_ring) => parent_ring_change(f, new_ring) for
+        (x, f) in ode.x_equations
+    )
+    new_y_eqs = Dict{P, Union{P, Generic.Frac{P}}}(
+        parent_ring_change(y, new_ring) => parent_ring_change(g, new_ring) for
+        (y, g) in ode.y_equations
+    )
     new_us = map(v -> switch_ring(v, new_ring), ode.u_vars)
     return ODE{P}(new_x_eqs, new_y_eqs, new_us)
 end
 
-
-
-function remove_unused_state(ode::ODE{P}, eq::String) where P <: Nemo.MPolyElem
+function remove_unused_state(ode::ODE{P}, eq::String) where {P <: Nemo.MPolyElem}
     vars = collect(map(var_to_str, gens(ode.poly_ring)))
     new_var_names = [v for v in vars if v != eq]
     new_ring, _ = Nemo.PolynomialRing(Nemo.QQ, new_var_names)
-    new_x_eqs = Dict{P, Union{P, Generic.Frac{P}}}(parent_ring_change(x, new_ring) => parent_ring_change(f, new_ring) for (x, f) in ode.x_equations if var_to_str(x) != eq)
-    new_y_eqs = Dict{P, Union{P, Generic.Frac{P}}}(parent_ring_change(y, new_ring) => parent_ring_change(g, new_ring) for (y, g) in ode.y_equations if var_to_str(y) != eq)
+    new_x_eqs = Dict{P, Union{P, Generic.Frac{P}}}(
+        parent_ring_change(x, new_ring) => parent_ring_change(f, new_ring) for
+        (x, f) in ode.x_equations if var_to_str(x) != eq
+    )
+    new_y_eqs = Dict{P, Union{P, Generic.Frac{P}}}(
+        parent_ring_change(y, new_ring) => parent_ring_change(g, new_ring) for
+        (y, g) in ode.y_equations if var_to_str(y) != eq
+    )
     new_us = map(v -> switch_ring(v, new_ring), ode.u_vars)
     return ODE{P}(new_x_eqs, new_y_eqs, new_us)
 end
-
-
