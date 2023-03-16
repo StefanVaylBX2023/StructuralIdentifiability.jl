@@ -286,6 +286,7 @@ Output:
 """
 function perform_substitution(ode::ODE{P}) where {P <: fmpq_mpoly}
     ys = collect(keys(ode.y_equations))
+    init_ode = ode
     integrals = Dict{P, Union{P, Generic.Frac{P}}}()
     ode = add_u_eqs(ode)
     ode_aux = ode
@@ -294,7 +295,7 @@ function perform_substitution(ode::ODE{P}) where {P <: fmpq_mpoly}
     temp2 = ode_aux
     if subbed == 0
         @debug "There are no substitutions for this case"
-        return ode, integrals, ode_aux
+        return init_ode, integrals, ode_aux
     else
         integrals[first(keys(integral))] = integral[first(keys(integral))]
         while subbed != 0
