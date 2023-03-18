@@ -289,8 +289,7 @@ function perform_substitution(ode::ODE{P}) where {P <: fmpq_mpoly}
     init_ode = ode
     integrals = Dict{P, Union{P, Generic.Frac{P}}}()
     ode = add_u_eqs(ode)
-    ode_aux = ode
-    subbed, integral, ode_aux = construct_substitution(ode, ode_aux)
+    subbed, integral, ode_aux = construct_substitution(ode, ode)
     temp = subbed
     temp2 = ode_aux
     if subbed == 0
