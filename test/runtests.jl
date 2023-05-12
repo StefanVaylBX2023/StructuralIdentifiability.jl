@@ -48,7 +48,8 @@ using StructuralIdentifiability:
     io_switch!,
     add_outputs,
     find_ioprojections,
-    choose
+    choose,
+    perform_substitution
 
 function random_ps(ps_ring, range = 1000)
     result = zero(ps_ring)
